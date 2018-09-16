@@ -3,6 +3,7 @@ require 'multi_json'
 
 module Customerio
   DEFAULT_BASE_URI = 'https://track.customer.io'
+  BETA_API_URI = 'https://beta-api.customer.io'
   DEFAULT_TIMEOUT  = 10
 
   class Client
@@ -40,6 +41,10 @@ module Customerio
 
     def unsuppress(customer_id)
       verify_response(request(:post, unsuppress_path(customer_id)))
+    end
+
+    def get_customer(customer_id)
+      verify_response(request(:get, get_customer_path(customer_id), nil, {}, BETA_API_URI))
     end
 
     def track(*args)
@@ -126,6 +131,10 @@ module Customerio
       "/api/v1/customers/#{id}"
     end
 
+    def get_customer_path(id)
+      "v1/api/customers/#{id}/attributes"
+    end
+
     def suppress_path(customer_id)
       "/api/v1/customers/#{customer_id}/suppress"
     end
@@ -152,8 +161,8 @@ module Customerio
       hash.inject({}){ |hash, (k,v)| hash[k.to_sym] = v; hash }
     end
 
-    def request(method, path, body = nil, headers = {})
-      uri = URI.join(@base_uri, path)
+    def request(method, path, body = nil, headers = {}, base_uri = @base_uri)
+      uri = URI.join(base_uri, path)
 
       session = Net::HTTP.new(uri.host, uri.port)
       session.use_ssl = (uri.scheme == 'https')
@@ -173,6 +182,8 @@ module Customerio
 
     def request_class(method)
       case method
+      when :get
+        Net::HTTP::Get
       when :post
         Net::HTTP::Post
       when :put
