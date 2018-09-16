@@ -19,6 +19,8 @@ module Customerio
       end
     end
 
+    class RecordNotFound < RuntimeError; end
+
     def initialize(site_id, secret_key, options = {})
       @username = site_id
       @password = secret_key
@@ -41,10 +43,6 @@ module Customerio
 
     def unsuppress(customer_id)
       verify_response(request(:post, unsuppress_path(customer_id)))
-    end
-
-    def get_customer(customer_id)
-      verify_response(request(:get, get_customer_path(customer_id), nil, {}, BETA_API_URI))
     end
 
     def track(*args)
@@ -92,6 +90,11 @@ module Customerio
       
       verify_response(request(:delete, device_id_path(customer_id, device_id)))
     end
+
+    def get_customer(customer_id)
+      verify_response(request(:get, get_customer_path(customer_id), nil, {}, BETA_API_URI))
+    end
+
 
     private
 
@@ -152,6 +155,7 @@ module Customerio
       if response.code.to_i >= 200 && response.code.to_i < 300
         response
       else
+        raise RecordNotFound.new("Not found") if response.code.to_i == 404
         raise InvalidResponse.new("Customer.io API returned an invalid response: #{response.code}", response)
       end
     end
